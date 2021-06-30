@@ -1,0 +1,7 @@
+{
+  "extends": "eslint:recommended",
+  "env": { "node": true, "browser": false },
+  "rules": {
+    "no-multiple-empty-lines": ["error", 1]
+  }
+}
