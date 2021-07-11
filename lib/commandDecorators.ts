@@ -1,19 +1,29 @@
 import 'reflect-metadata';
 import { optionalParameterMetadataKey } from './decoratorMetadata';
 
-type Class = { new (...args: any[]): any; [key: string]: any };
+type Class = { new (...args: unknown[]): Class; [key: string]: unknown };
 
-export function optional(target: Class, propertyKey: string, parameterIndex: number) {
+export function optional(
+  target: Class,
+  propertyKey: string,
+  parameterIndex: number
+) {
   const targetMethod = propertyKey in target ? target[propertyKey] : null;
 
   if (typeof targetMethod != 'function') {
-    throw { Message: 'Error! Optional decorator can only be used on method parameters!' };
+    throw new Error(
+      'Error! Optional decorator can only be used on method parameters!'
+    );
   }
 
-  const existingRequiredParameters: number[] =
+  const existingOptionalParams: number[] =
     Reflect.getOwnMetadata(optionalParameterMetadataKey, targetMethod) || [];
 
-  existingRequiredParameters.push(parameterIndex);
+  existingOptionalParams.push(parameterIndex);
 
-  Reflect.defineMetadata(optionalParameterMetadataKey, existingRequiredParameters, targetMethod);
+  Reflect.defineMetadata(
+    optionalParameterMetadataKey,
+    existingOptionalParams,
+    targetMethod
+  );
 }

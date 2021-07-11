@@ -11,7 +11,8 @@
     "dotenv": "^8.2.0",
     "node-fetch": "^2.6.1",
     "parse5": "^6.0.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "tedis": "^0.1.12"
   },
   "devDependencies": {
     "@types/node": "^14.14.25",
