@@ -1,21 +1,18 @@
-import { Message } from 'discord.js';
-import { Command } from '.';
+import { Command } from '../lib/commands';
 import Servers from '../services/servers';
 
-export default class PingCommand implements Command {
-  async handler(message: Message, prefix: string) {
+export default class SetprefixCommand extends Command {
+  async handler(prefix: string) {
     const serversService = new Servers();
 
-    const { id } = message.guild;
+    const { id } = this.context.message.guild;
 
     await serversService.setPrefixAsync(id, prefix);
 
-    await message.channel.send(
-      `Command prefix for this server set as "${prefix}"`
-    );
+    await this.replyAsync(`Command prefix for this server set as "${prefix}"`);
   }
 
-  help() {
+  static help() {
     return `Sets the prefix used for bot commands on the current server.
 Example.: !setprefix @`;
   }

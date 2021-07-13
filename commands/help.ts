@@ -1,17 +1,10 @@
-import { Message } from 'discord.js';
-import { Command } from '.';
 import { optional } from '../lib/commandDecorators';
+import { Command, getHelp } from '../lib/commands';
 
-type Help = [string, string];
+class HelpCommand extends Command {
+  async handler(@optional command: string) {
+    const helpList = getHelp();
 
-const helpList: Array<Help> = [];
-
-export const addHelp = (help: Help) => {
-  helpList.push(help);
-};
-
-export default class HelpCommand implements Command {
-  async handler(message: Message, @optional command: string) {
     const list = command
       ? helpList.filter(([name]) => name === command)
       : helpList;
@@ -20,10 +13,12 @@ export default class HelpCommand implements Command {
       .map(([name, message]) => `**${name}**:\n${message}`)
       .join('\n\n');
 
-    await message.channel.send(helpMessage);
+    await this.replyAsync(helpMessage);
   }
 
-  help() {
+  static help() {
     return 'Returns this message.';
   }
 }
+
+export default HelpCommand;

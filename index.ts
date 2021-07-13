@@ -1,8 +1,8 @@
 import Discord from 'discord.js';
+import { handleCommand, loadCommandsAsync } from './lib/commands';
 import { env } from './modules/env';
-import { handleCommand, loadCommandsAsync } from './commands';
 import { configurePool } from './modules/redis';
-import { getServersAsync } from './modules/cache';
+import { cache } from './services/servers';
 
 const client = new Discord.Client();
 
@@ -14,7 +14,7 @@ client.once('ready', async () => {
   console.log('bot running');
 });
 
-client.on('message', async message => {
+client.on('message', async (message) => {
   const {
     author: { id: userId },
     guild: { id: serverId },
@@ -24,9 +24,9 @@ client.on('message', async message => {
     return;
   }
 
-  const servers = await getServersAsync();
+  const servers = await cache.getAsync();
 
-  const server = servers.find(x => x.id === serverId);
+  const server = servers.find((x) => x.id === serverId);
 
   const prefix = server?.prefix ?? '!';
 

@@ -1,14 +1,13 @@
-import { Message } from 'discord.js';
-import { Command } from '.';
+import { Command } from '../lib/commands';
 
-export default class PingCommand implements Command {
-  async handler(message: Message) {
-    await message.channel.send(
-      `pong! ${new Date().getTime() - message.createdTimestamp}ms`
-    );
+export default class PingCommand extends Command {
+  async handler() {
+    const delay = new Date().getTime() - this.context.message.createdTimestamp;
+
+    await this.replyAsync(`pong! ${delay}ms`);
   }
 
-  help() {
+  static help() {
     return `Returns the amount of time it took for the server to receive your message.
 Example.: !pong 300ms`;
   }

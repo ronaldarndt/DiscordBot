@@ -1,20 +1,48 @@
-import Servers, { Server } from '../services/servers';
-const serversService = new Servers();
+class AsynCache<T> {
+  private _factoryAsync: () => Promise<T>;
+  private _timeout: number;
+  private _check: number;
+  private _value: T;
 
-let t = new Date().getTime();
-let servers: Array<Server>;
-
-export const getServersAsync = async () => {
-  const now = new Date().getTime();
-
-  if (!servers || now - t > 1000 * 60 * 5) {
-    servers = await serversService.getServersAsync();
-    t = now;
+  constructor(timeout: number, factoryAsync: () => Promise<T>) {
+    this._factoryAsync = factoryAsync;
+    this._timeout = timeout;
   }
 
-  return servers;
-};
+  getAsync = async () => {
+    const now = new Date().getTime();
 
-export const invalidateCache = () => {
-  servers = undefined;
-};
+    if (!this._value || now - this._check > this._timeout) {
+      this._value = await this._factoryAsync();
+      this._check = now;
+    }
+
+    return this._value;
+  };
+
+  invalidate = () => {
+    this._value = undefined;
+  };
+}
+
+class AsyncLazy<T> {
+  private _factoryAsync: () => Promise<T>;
+  private _value: T;
+
+  loaded = false;
+
+  constructor(factoryAsync: () => Promise<T>) {
+    this._factoryAsync = factoryAsync;
+  }
+
+  getAsync = async () => {
+    if (!this._value) {
+      this._value = await this._factoryAsync();
+      this.loaded = true;
+    }
+
+    return this._value;
+  };
+}
+
+export { AsynCache, AsyncLazy };

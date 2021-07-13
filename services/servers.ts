@@ -1,5 +1,5 @@
 import { Tedis } from 'tedis';
-import { invalidateCache } from '../modules/cache';
+import { AsynCache } from '../modules/cache';
 import { getRedisAsync, pool } from '../modules/redis';
 
 export interface Server {
@@ -16,7 +16,7 @@ export default class Servers {
     const keys = await this._redis.smembers('servers');
 
     const mapping = keys.map(
-      async key => (await this._redis.hgetall(key)) as unknown
+      async (key) => (await this._redis.hgetall(key)) as unknown
     );
 
     const servers = await Promise.all(mapping);
@@ -36,7 +36,7 @@ export default class Servers {
       prefix,
     });
 
-    invalidateCache();
+    cache.invalidate();
 
     this.putRedis();
   };
@@ -55,3 +55,9 @@ export default class Servers {
     }
   };
 }
+
+const fiveMin = 1000 * 60 * 5;
+
+const cacheInstance = new Servers();
+
+export const cache = new AsynCache(fiveMin, cacheInstance.getServersAsync);

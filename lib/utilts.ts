@@ -1,25 +1,23 @@
-import { Command } from '../commands';
+import { CommandHandler } from '../modules/types';
 import {
   getDecoratorInstances,
   optionalParameterMetadataKey,
 } from './decoratorMetadata';
 
 type ParseReturn = [boolean, string[]];
-type Handler = Command['handler'];
 
-const tryParseCommand = (text: Array<string>, handler: Handler) => {
+const tryParseCommand = (text: Array<string>, handler: CommandHandler) => {
   const parameters = text.slice(1);
-  const length = handler.length - 1;
 
   const optionalArgsCount = getDecoratorInstances<number>(
     handler,
     optionalParameterMetadataKey
-  ).reduce((acc, v) => acc + v, 0);
+  ).length;
 
   const success = between(
     parameters.length,
-    length - optionalArgsCount,
-    length
+    handler.length - optionalArgsCount,
+    handler.length
   );
 
   return [success, parameters] as ParseReturn;
