@@ -2,7 +2,9 @@ import { optional } from '../lib/commandDecorators';
 import { Command, getHelp } from '../lib/commands';
 
 class HelpCommand extends Command {
-  async handler(@optional command: string) {
+  name = 'help';
+
+  async handler(@optional command: string = '') {
     const helpList = getHelp();
 
     const list = command

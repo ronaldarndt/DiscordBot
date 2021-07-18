@@ -5,6 +5,8 @@ import { Command } from '../lib/commands';
 const key = process.env.OPENWEATHERMAP_KEY;
 
 export default class TafrioCommand extends Command {
+  name = 'tafrio';
+
   async handler(@optional cidade: string = 'porto alegre') {
     const res = await fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&appid=${key}`

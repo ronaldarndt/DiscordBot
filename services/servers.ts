@@ -16,7 +16,7 @@ export default class Servers {
     const keys = await this._redis.smembers('servers');
 
     const mapping = keys.map(
-      async (key) => (await this._redis.hgetall(key)) as unknown
+      async key => (await this._redis.hgetall(key)) as unknown
     );
 
     const servers = await Promise.all(mapping);

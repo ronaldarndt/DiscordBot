@@ -16,8 +16,8 @@ const tryParseCommand = (text: Array<string>, handler: CommandHandler) => {
 
   const success = between(
     parameters.length,
-    handler.length - optionalArgsCount,
-    handler.length
+    handler.length,
+    handler.length + optionalArgsCount
   );
 
   return [success, parameters] as ParseReturn;

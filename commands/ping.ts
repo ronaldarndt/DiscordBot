@@ -1,6 +1,8 @@
 import { Command } from '../lib/commands';
 
 export default class PingCommand extends Command {
+  name = 'ping';
+
   async handler() {
     const delay = new Date().getTime() - this.context.message.createdTimestamp;
 

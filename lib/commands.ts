@@ -7,23 +7,26 @@ import { AsyncLazy } from '../modules/cache';
 import { getRedisAsync, pool } from '../modules/redis';
 
 type CustomCommand = typeof Command & (new () => Command);
+type CommandList = { [name: string]: CustomCommand };
 type Help = [command: string, text: string];
 
 interface CommandContext {
   message: Message;
   redis: AsyncLazy<Tedis>;
 }
-const commands = new Map<string, CustomCommand>();
+const commands: CommandList = {};
 const helps: Array<Help> = [];
 
 abstract class Command {
+  abstract name: string;
+  static subCommands: CommandList = {};
   context: CommandContext;
 
   protected async replyAsync(message: string) {
     await this.context.message.channel.send(message);
   }
 
-  public static async initAsync<T extends Command>(
+  static async initAsync<T extends Command>(
     this: new () => T,
     message: Message
   ) {
@@ -37,7 +40,15 @@ abstract class Command {
     return command;
   }
 
-  abstract handler(...args: unknown[]): Promise<void>;
+  static hasSub(this: CustomCommand, name: string) {
+    return name in this.subCommands;
+  }
+
+  static hasHandler<T extends Command>(this: new () => T) {
+    return !!new this().handler;
+  }
+
+  handler?(...args: unknown[]): Promise<void>;
   static help: () => string;
 }
 
@@ -48,54 +59,83 @@ function getHelp() {
 async function loadCommandsAsync() {
   const files = await promises
     .readdir('./commands/')
-    .then((files) =>
-      files.filter((file) => file.endsWith('.ts') && file != 'index.ts')
+    .then(files =>
+      files.filter(file => file.endsWith('.ts') && file != 'index.ts')
     );
 
   for (let file of files) {
     const filename = basename(file, '.ts');
 
-    const commandClass: CustomCommand = (
-      await import('../commands/' + filename)
-    ).default;
+    const commandClass = await import(`../commands/${filename}`).then(
+      x => x.default as CustomCommand
+    );
 
-    helps.push([filename, commandClass.help()]);
-    commands.set(filename, commandClass);
+    //@ts-ignore
+    const cmd: Command = new commandClass();
+
+    helps.push([cmd.name, commandClass.help()]);
+    commands[cmd.name] = commandClass;
   }
 }
 
-async function handleCommand(message: Discord.Message) {
-  const text = message.content.substr(1).split(' ');
-  const command = text[0];
+async function handleCommand(
+  message: Discord.Message,
+  text: string,
+  prefix: string,
+  list?: CommandList
+) {
+  list ??= commands;
 
-  if (!commands.has(command)) {
-    await message.channel.send('Command not found');
+  const parts = text.split(/ +/);
+  const userCommand = parts[0];
 
-    return;
-  }
+  const command = list[userCommand];
+  const hasSub = command?.hasSub(parts[1]);
 
-  const commandHandler = await commands.get(command).initAsync(message);
-
-  const {
-    context: { redis },
-  } = commandHandler;
-
-  const [parseSuccess, args] = tryParseCommand(text, commandHandler.handler);
-
-  if (!parseSuccess) {
+  if (!command || (!hasSub && !command.hasHandler())) {
     await message.channel.send(
-      'Invalid parameters.' +
-        `Command ${command} expects ${commandHandler.handler.length} parameters but received ${args.length}.` +
-        `Type !help ${command} for more info`
+      `Command not found. Type ${prefix}help for more info`
     );
 
     return;
   }
 
-  await commandHandler.handler(...args);
+  if (hasSub) {
+    await handleCommand(
+      message,
+      parts.skip(1).join(' '),
+      prefix,
+      command.subCommands
+    );
 
-  if (redis.loaded) {
-    pool.putTedis(await redis.getAsync());
+    return;
+  }
+
+  const commandHandler = await command.initAsync(message);
+  const { name, handler } = commandHandler;
+
+  const [parseSuccess, args] = tryParseCommand(parts, handler);
+
+  if (!parseSuccess) {
+    await message.channel.send(
+      'Invalid parameters.' +
+        ` Command ${name} expects ${handler.length} parameters but received ${args.length}.` +
+        ` Type !help ${name} for more info.`
+    );
+
+    return;
+  }
+
+  try {
+    await commandHandler.handler(...args);
+  } finally {
+    const {
+      context: { redis },
+    } = commandHandler;
+
+    if (redis.loaded) {
+      pool.putTedis(await redis.getAsync());
+    }
   }
 }
 

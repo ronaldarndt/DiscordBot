@@ -1,7 +1,12 @@
 {
   "extends": "eslint:recommended",
-  "env": { "node": true, "browser": false },
+  "env": { "node": true, "es6": true, "browser": false },
+  "parserOptions": { "ecmaVersion": "latest" },
   "rules": {
-    "no-multiple-empty-lines": ["error", 1]
+    "no-multiple-empty-lines": ["error", 1],
+    "brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
+    "no-console": "warn",
+    "no-empty": "error",
+    "no-var": "error"
   }
 }

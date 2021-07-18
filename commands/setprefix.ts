@@ -2,6 +2,8 @@ import { Command } from '../lib/commands';
 import Servers from '../services/servers';
 
 export default class SetprefixCommand extends Command {
+  name = 'setprefix';
+
   async handler(prefix: string) {
     const serversService = new Servers();
 
