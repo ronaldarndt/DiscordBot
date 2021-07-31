@@ -1,9 +1,17 @@
 import Discord from 'discord.js';
-import { handleCommand, loadCommandsAsync } from './lib/commands';
+import { loadCommandsAsync } from './lib/commands';
+import { botInterceptorAsync } from './middlewares/botInterceptor';
+import { handleMessageAsync } from './middlewares/handleMessage';
+import { licoMiddleware } from './middlewares/lico';
 import './modules/array';
 import { env } from './modules/env';
+import { MiddlewarePipeline } from './modules/middlewarePipeline';
 import { configurePool } from './modules/redis';
-import { cache } from './services/servers';
+
+const pipeline = new MiddlewarePipeline()
+  .use(botInterceptorAsync)
+  .use(licoMiddleware)
+  .use(handleMessageAsync);
 
 const client = new Discord.Client();
 
@@ -15,29 +23,6 @@ client.once('ready', async () => {
   console.log('bot running');
 });
 
-client.on('message', async message => {
-  const {
-    author,
-    guild: { id: guildId },
-  } = message;
-
-  if (author.bot) {
-    return;
-  }
-
-  const servers = await cache.getAsync();
-
-  const server = servers.find(x => x.id === guildId);
-
-  const prefix = server?.prefix ?? '!';
-
-  if (message.content.startsWith(prefix)) {
-    await handleCommand(
-      message,
-      message.content.substr(prefix.length).trim(),
-      prefix
-    );
-  }
-});
+client.on('message', pipeline.execute);
 
 client.login(env.DISCORD_TOKEN);
