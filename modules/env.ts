@@ -8,6 +8,7 @@ export interface Env extends NodeJS.ProcessEnv {
   REDIS_HOST: string;
   REDIS_PORT: string;
   REDIS_PW: string;
+  CODIGO_SECULLUM_INTERNO: string;
 }
 
 export const env = process.env as Env;
