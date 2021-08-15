@@ -1,9 +1,11 @@
+import { injectable } from 'tsyringe';
 import { Command } from '../lib/commands';
 
+@injectable()
 class AgendaAddCommand extends Command {
-  name: 'add';
+  static command = 'add';
 
-  async handler() {
+  async handlerAsync() {
     await this.replyAsync('taokay');
   }
 
@@ -12,8 +14,9 @@ class AgendaAddCommand extends Command {
   }
 }
 
+@injectable()
 export default class AgendaCommand extends Command {
-  name = 'agenda';
+  static command = 'agenda';
   static subCommands = {
     add: AgendaAddCommand,
   };

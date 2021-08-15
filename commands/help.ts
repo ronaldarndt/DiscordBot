@@ -1,15 +1,19 @@
+import { inject, injectable } from 'tsyringe';
 import { optional } from '../lib/commandDecorators';
-import { Command, getHelp } from '../lib/commands';
+import { Command, Help } from '../lib/commands';
 
+@injectable()
 class HelpCommand extends Command {
-  name = 'help';
+  static command = 'help';
 
-  async handler(@optional command: string = '') {
-    const helpList = getHelp();
+  constructor(@inject('help') private helpList: Help[]) {
+    super();
+  }
 
+  async handlerAsync(@optional command: string = '') {
     const list = command
-      ? helpList.filter(([name]) => name === command)
-      : helpList;
+      ? this.helpList.filter(([name]) => name === command)
+      : this.helpList;
 
     const helpMessage = list
       .map(([name, message]) => `**${name}**:\n${message}`)

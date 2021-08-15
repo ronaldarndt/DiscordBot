@@ -1,13 +1,13 @@
 import { Message } from 'discord.js';
 import { handleCommand } from '../lib/commands';
-import { cache } from '../services/servers';
+import { Servers } from '../services/servers';
 
 async function handleMessageAsync(message: Message) {
   const {
     guild: { id: guildId },
   } = message;
 
-  const servers = await cache.getAsync();
+  const servers = await Servers.getCacheAsync().then(cache => cache.getAsync());
 
   const server = servers.find(x => x.id === guildId);
 

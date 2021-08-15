@@ -1,9 +1,9 @@
 import { TedisPool } from 'tedis';
 import { env } from './env';
 
-export let pool: TedisPool;
+let pool: TedisPool;
 
-export const configurePool = () => {
+const configurePool = () => {
   pool = new TedisPool({
     host: env.REDIS_HOST,
     port: Number(env.REDIS_PORT),
@@ -11,4 +11,6 @@ export const configurePool = () => {
   });
 };
 
-export const getRedisAsync = async () => pool.getTedis();
+const getPool = () => pool;
+
+export { configurePool, getPool };

@@ -1,6 +1,9 @@
 import { Message } from 'discord.js';
 
-async function licoMiddleware(message: Message, next: () => Promise<void>) {
+async function bandidoInterceptorAsync(
+  message: Message,
+  next: () => Promise<void>
+) {
   for (const ladrao of ['bandido', 'ladrão', 'ladrao', 'criminoso']) {
     if (message.content.toLowerCase().includes(ladrao)) {
       await message.reply(ladrao + '? Acho que você quis dizer Lincon.');
@@ -12,4 +15,4 @@ async function licoMiddleware(message: Message, next: () => Promise<void>) {
   await next();
 }
 
-export { licoMiddleware };
+export { bandidoInterceptorAsync };

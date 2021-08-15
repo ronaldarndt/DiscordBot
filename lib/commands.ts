@@ -1,10 +1,8 @@
 import Discord, { Message } from 'discord.js';
 import { promises } from 'fs';
 import { basename } from 'path';
-import { Tedis } from 'tedis';
+import { container } from 'tsyringe';
 import { tryParseCommand } from '../lib/utilts';
-import { AsyncLazy } from '../modules/cache';
-import { getRedisAsync, pool } from '../modules/redis';
 
 type CustomCommand = typeof Command & (new () => Command);
 type CommandList = { [name: string]: CustomCommand };
@@ -12,32 +10,24 @@ type Help = [command: string, text: string];
 
 interface CommandContext {
   message: Message;
-  redis: AsyncLazy<Tedis>;
 }
+
 const commands: CommandList = {};
-const helps: Array<Help> = [];
 
 abstract class Command {
-  abstract name: string;
+  static command: string;
   static subCommands: CommandList = {};
-  context: CommandContext;
+  protected context: CommandContext;
+
+  handlerAsync?(...args: unknown[]): Promise<void>;
+  disposeAsync?(): Promise<void>;
+
+  setContext(c: CommandContext) {
+    this.context = c;
+  }
 
   protected async replyAsync(message: string) {
     await this.context.message.channel.send(message);
-  }
-
-  static async initAsync<T extends Command>(
-    this: new () => T,
-    message: Message
-  ) {
-    const command = new this();
-
-    command.context = {
-      message,
-      redis: new AsyncLazy(getRedisAsync),
-    };
-
-    return command;
   }
 
   static hasSub(this: CustomCommand, name: string) {
@@ -45,15 +35,10 @@ abstract class Command {
   }
 
   static hasHandler<T extends Command>(this: new () => T) {
-    return !!new this().handler;
+    return !!new this().handlerAsync;
   }
 
-  handler?(...args: unknown[]): Promise<void>;
   static help: () => string;
-}
-
-function getHelp() {
-  return helps;
 }
 
 async function loadCommandsAsync() {
@@ -63,6 +48,8 @@ async function loadCommandsAsync() {
       files.filter(file => file.endsWith('.ts') && file != 'index.ts')
     );
 
+  const helps: Array<Help> = [];
+
   for (let file of files) {
     const filename = basename(file, '.ts');
 
@@ -70,12 +57,13 @@ async function loadCommandsAsync() {
       x => x.default as CustomCommand
     );
 
-    //@ts-ignore
-    const cmd: Command = new commandClass();
+    const name = commandClass.command ?? commandClass.name;
 
-    helps.push([cmd.name, commandClass.help()]);
-    commands[cmd.name] = commandClass;
+    helps.push([name, commandClass.help()]);
+    commands[name] = commandClass;
   }
+
+  return helps;
 }
 
 async function handleCommand(
@@ -111,32 +99,32 @@ async function handleCommand(
     return;
   }
 
-  const commandHandler = await command.initAsync(message);
-  const { name, handler } = commandHandler;
+  const commandHandler = container.resolve(command);
+  commandHandler.setContext({ message });
 
-  const [parseSuccess, args] = tryParseCommand(parts, handler);
-
-  if (!parseSuccess) {
-    await message.channel.send(
-      'Invalid parameters.' +
-        ` Command ${name} expects ${handler.length} parameters but received ${args.length}.` +
-        ` Type !help ${name} for more info.`
-    );
-
-    return;
-  }
+  const name = command.command ?? command.name;
 
   try {
-    await commandHandler.handler(...args);
-  } finally {
-    const {
-      context: { redis },
-    } = commandHandler;
+    const { handlerAsync } = commandHandler;
 
-    if (redis.loaded) {
-      pool.putTedis(await redis.getAsync());
+    const [parseSuccess, args] = tryParseCommand(parts, handlerAsync);
+
+    if (!parseSuccess) {
+      await message.channel.send(
+        'Invalid parameters.' +
+          ` Command ${name} expects ${handlerAsync.length} parameters but received ${args.length}.` +
+          ` Type !help ${name} for more info.`
+      );
+
+      return;
+    }
+
+    await commandHandler.handlerAsync(...args);
+  } finally {
+    if (commandHandler.disposeAsync) {
+      await commandHandler.disposeAsync();
     }
   }
 }
 
-export { Command, getHelp, loadCommandsAsync, handleCommand, commands };
+export { Command, loadCommandsAsync, handleCommand, Help, commands };

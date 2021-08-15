@@ -1,9 +1,11 @@
+import { injectable } from 'tsyringe';
 import { Command } from '../lib/commands';
 
+@injectable()
 export default class PingCommand extends Command {
-  name = 'ping';
+  static command = 'ping';
 
-  async handler() {
+  async handlerAsync() {
     const delay = new Date().getTime() - this.context.message.createdTimestamp;
 
     await this.replyAsync(`pong! ${delay}ms`);
