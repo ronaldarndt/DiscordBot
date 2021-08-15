@@ -1,4 +1,5 @@
 import Discord, { Message } from 'discord.js';
+import http from 'http';
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { loadCommandsAsync } from './lib/commands';
@@ -10,6 +11,13 @@ import { AsyncLazy } from './modules/cache';
 import { env } from './modules/env';
 import { MiddlewarePipeline } from './modules/middlewarePipeline';
 import { configurePool, getPool } from './modules/redis';
+
+const server = http.createServer((req, res) => {
+  res.write(':)');
+  res.end();
+});
+
+server.listen(process.env.PORT);
 
 const pipeline = new MiddlewarePipeline<Message>()
   .use(botInterceptorAsync)
