@@ -1,6 +1,6 @@
 import Discord, { Message } from 'discord.js';
 import { promises } from 'fs';
-import { basename } from 'path';
+import path from 'path';
 import { container } from 'tsyringe';
 import { tryParseCommand } from './utilts';
 
@@ -44,18 +44,22 @@ abstract class Command {
 }
 
 async function loadCommandsAsync() {
+  const folderPath = path.resolve(__dirname, '..', 'commands');
+
   const files = await promises
-    .readdir('./commands/')
+    .readdir(folderPath)
     .then(files =>
-      files.filter(file => file.endsWith('.ts') && file != 'index.ts')
+      files.filter(
+        file =>
+          (file.endsWith('.ts') || file.endsWith('.js')) &&
+          !file.includes('index.')
+      )
     );
 
   const helps: Array<Help> = [];
 
   for (let file of files) {
-    const filename = basename(file, '.ts');
-
-    const commandClass = await import(`../commands/${filename}`).then(
+    const commandClass = await import(path.resolve(folderPath, file)).then(
       x => x.default as CustomCommand
     );
 
