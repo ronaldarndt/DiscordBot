@@ -1,8 +1,8 @@
 class AsynCache<T> {
   private _factoryAsync: () => Promise<T>;
   private _timeout: number;
-  private _check: number;
-  private _value: T;
+  private _check: number = 0;
+  private _value?: T;
 
   constructor(timeout: number, factoryAsync: () => Promise<T>) {
     this._factoryAsync = factoryAsync;
@@ -27,7 +27,7 @@ class AsynCache<T> {
 
 class AsyncLazy<T> {
   private _factoryAsync: () => Promise<T>;
-  private _value: T;
+  private _value?: T;
 
   loaded = false;
 

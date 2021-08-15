@@ -16,9 +16,17 @@ export default class SetprefixCommand extends Command {
   async handlerAsync(prefix: string) {
     const serversService = new Servers(await this.lazyRedis.getAsync());
 
-    const { id } = this.context.message.guild;
+    const { guild } = this.context.message;
 
-    await serversService.setPrefixAsync(id, prefix);
+    if (!guild) {
+      await this.replyAsync(
+        'You can not use this command outside of a Discord server.'
+      );
+
+      return;
+    }
+
+    await serversService.setPrefixAsync(guild.id, prefix);
 
     await this.replyAsync(`Command prefix for this server set as "${prefix}"`);
   }

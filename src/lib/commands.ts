@@ -2,7 +2,7 @@ import Discord, { Message } from 'discord.js';
 import { promises } from 'fs';
 import { basename } from 'path';
 import { container } from 'tsyringe';
-import { tryParseCommand } from '../lib/utilts';
+import { tryParseCommand } from './utilts';
 
 type CustomCommand = typeof Command & (new () => Command);
 type CommandList = { [name: string]: CustomCommand };
@@ -17,6 +17,8 @@ const commands: CommandList = {};
 abstract class Command {
   static command: string;
   static subCommands: CommandList = {};
+
+  //@ts-ignore
   protected context: CommandContext;
 
   handlerAsync?(...args: unknown[]): Promise<void>;
@@ -107,19 +109,21 @@ async function handleCommand(
   try {
     const { handlerAsync } = commandHandler;
 
-    const [parseSuccess, args] = tryParseCommand(parts, handlerAsync);
+    const [parseSuccess, args] = tryParseCommand(parts, handlerAsync!);
 
     if (!parseSuccess) {
       await message.channel.send(
         'Invalid parameters.' +
-          ` Command ${name} expects ${handlerAsync.length} parameters but received ${args.length}.` +
+          ` Command ${name} expects ${
+            handlerAsync!.length
+          } parameters but received ${args.length}.` +
           ` Type !help ${name} for more info.`
       );
 
       return;
     }
 
-    await commandHandler.handlerAsync(...args);
+    await commandHandler.handlerAsync!(...args);
   } finally {
     if (commandHandler.disposeAsync) {
       await commandHandler.disposeAsync();

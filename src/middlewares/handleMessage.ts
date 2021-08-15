@@ -3,13 +3,11 @@ import { handleCommand } from '../lib/commands';
 import { Servers } from '../services/servers';
 
 async function handleMessageAsync(message: Message) {
-  const {
-    guild: { id: guildId },
-  } = message;
+  const { guild } = message;
 
   const servers = await Servers.getCacheAsync().then(cache => cache.getAsync());
 
-  const server = servers.find(x => x.id === guildId);
+  const server = guild ? servers.find(x => x.id === guild.id) : null;
 
   const prefix = server?.prefix ?? '!';
 

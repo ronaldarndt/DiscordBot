@@ -5,9 +5,9 @@ export type Middleware<T> = (
 
 class MiddlewarePipeline<T> {
   use = (fn: Middleware<T>) => {
-    this.execute = (stack => (c: T, next: Middleware<T>) =>
+    this.execute = (stack => (c: T, next?: Middleware<T>) =>
       stack(c, async () => {
-        await fn(c, () => next(c, null));
+        await fn(c, () => next!(c, null!));
       }))(this.execute);
 
     return this;
