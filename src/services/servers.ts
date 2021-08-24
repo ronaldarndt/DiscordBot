@@ -1,6 +1,7 @@
 import { Tedis } from 'tedis';
 import { container } from 'tsyringe';
 import { AsynCache, AsyncLazy } from '../modules/cache';
+import { pool } from '../modules/redis';
 
 interface Server {
   id: string;
@@ -39,10 +40,23 @@ class Servers {
 
   static async getCacheAsync() {
     if (!this.cache) {
-      const lazy = container.resolve<AsyncLazy<Tedis>>('redis');
-      const instance = new Servers(await lazy.getAsync());
+      let cacheRedis: Tedis;
 
-      this.cache = new AsynCache(fiveMin, instance.getServersAsync);
+      const factoryAsync = async () => {
+        if (cacheRedis) {
+          pool.putTedis(cacheRedis);
+        }
+
+        cacheRedis = await container
+          .resolve<AsyncLazy<Tedis>>('redis')
+          .getAsync();
+
+        const instance = new Servers(cacheRedis);
+
+        return await instance.getServersAsync();
+      };
+
+      this.cache = new AsynCache(fiveMin, factoryAsync);
     }
 
     return this.cache;

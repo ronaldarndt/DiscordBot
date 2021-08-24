@@ -1,10 +1,12 @@
+type AsyncFactory<T> = () => Promise<T>;
+
 class AsynCache<T> {
-  private _factoryAsync: () => Promise<T>;
+  private _factoryAsync: AsyncFactory<T>;
   private _timeout: number;
-  private _check: number = 0;
+  private _lastCheck = 0;
   private _value?: T;
 
-  constructor(timeout: number, factoryAsync: () => Promise<T>) {
+  constructor(timeout: number, factoryAsync: AsyncFactory<T>) {
     this._factoryAsync = factoryAsync;
     this._timeout = timeout;
   }
@@ -12,9 +14,9 @@ class AsynCache<T> {
   getAsync = async () => {
     const now = new Date().getTime();
 
-    if (!this._value || now - this._check > this._timeout) {
+    if (!this._value || now - this._lastCheck > this._timeout) {
       this._value = await this._factoryAsync();
-      this._check = now;
+      this._lastCheck = now;
     }
 
     return this._value;
@@ -26,12 +28,12 @@ class AsynCache<T> {
 }
 
 class AsyncLazy<T> {
-  private _factoryAsync: () => Promise<T>;
+  private _factoryAsync: AsyncFactory<T>;
   private _value?: T;
 
   loaded = false;
 
-  constructor(factoryAsync: () => Promise<T>) {
+  constructor(factoryAsync: AsyncFactory<T>) {
     this._factoryAsync = factoryAsync;
   }
 
