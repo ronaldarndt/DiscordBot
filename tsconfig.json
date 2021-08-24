@@ -5,8 +5,6 @@
     "target": "ES6",
     "noImplicitAny": true,
     "outDir": "dist",
-    "sourceRoot": "src",
-    "sourceMap": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
