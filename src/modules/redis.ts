@@ -11,6 +11,4 @@ const configurePool = () => {
   });
 };
 
-const getPool = () => pool;
-
-export { configurePool, getPool };
+export { configurePool, pool };

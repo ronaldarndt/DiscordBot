@@ -1,5 +1,4 @@
 import Discord, { Message } from 'discord.js';
-import http from 'http';
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 import { loadCommandsAsync } from './lib/commands';
@@ -10,38 +9,29 @@ import './modules/array';
 import { AsyncLazy } from './modules/cache';
 import { env } from './modules/env';
 import { MiddlewarePipeline } from './modules/middlewarePipeline';
-import { configurePool, getPool } from './modules/redis';
+import { configurePool, pool } from './modules/redis';
 
-const server = http.createServer((req, res) => {
-  res.write(':)');
-  res.end();
-});
-
-server.listen(process.env.PORT);
+const client = new Discord.Client();
 
 const pipeline = new MiddlewarePipeline<Message>()
   .use(botInterceptorAsync)
   .use(bandidoInterceptorAsync)
   .use(handleMessageAsync);
 
-const client = new Discord.Client();
+container.register('redis', {
+  useFactory: () => new AsyncLazy(() => pool.getTedis()),
+});
 
 configurePool();
-
-container.register('redis', {
-  useFactory: () => {
-    const pool = getPool();
-    return new AsyncLazy(() => pool.getTedis());
-  },
-});
 
 loadCommandsAsync().then(helps => {
   container.register('help', { useValue: helps });
 
+  console.log('commands loaded');
+
   client.on('message', pipeline.execute);
 
-  console.log('commands loaded');
-});
+  client.once('ready', () => console.log('bot running'));
 
-client.once('ready', () => console.log('bot running'));
-client.login(env.DISCORD_TOKEN);
+  client.login(env.DISCORD_TOKEN);
+});
