@@ -18,7 +18,7 @@ class AgendaAddCommand extends Command {
 export default class AgendaCommand extends Command {
   static command = 'agenda';
   static subCommands = {
-    add: AgendaAddCommand,
+    add: AgendaAddCommand
   };
 
   static help() {

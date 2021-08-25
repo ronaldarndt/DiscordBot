@@ -110,29 +110,23 @@ async function handleCommand(
 
   const name = command.command ?? command.name;
 
-  try {
-    const { handlerAsync } = commandHandler;
+  const { handlerAsync } = commandHandler;
 
-    const [parseSuccess, args] = tryParseCommand(parts, handlerAsync!);
+  const [parseSuccess, args] = tryParseCommand(parts, handlerAsync!);
 
-    if (!parseSuccess) {
-      await message.channel.send(
-        'Invalid parameters.' +
-          ` Command ${name} expects ${
-            handlerAsync!.length
-          } parameters but received ${args.length}.` +
-          ` Type !help ${name} for more info.`
-      );
+  if (!parseSuccess) {
+    await message.channel.send(
+      'Invalid parameters.' +
+        ` Command ${name} expects ${
+          handlerAsync!.length
+        } parameters but received ${args.length}.` +
+        ` Type !help ${name} for more info.`
+    );
 
-      return;
-    }
-
-    await commandHandler.handlerAsync!(...args);
-  } finally {
-    if (commandHandler.disposeAsync) {
-      await commandHandler.disposeAsync();
-    }
+    return;
   }
+
+  await commandHandler.handlerAsync!(...args);
 }
 
 export { Command, loadCommandsAsync, handleCommand, Help, commands };

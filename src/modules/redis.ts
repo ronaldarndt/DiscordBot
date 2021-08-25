@@ -1,14 +1,25 @@
-import { TedisPool } from 'tedis';
+import { createNodeRedisClient, WrappedNodeRedisClient } from 'handy-redis';
 import { env } from './env';
 
-let pool: TedisPool;
+class Redis {
+  instance: WrappedNodeRedisClient;
 
-const configurePool = () => {
-  pool = new TedisPool({
+  constructor(base: WrappedNodeRedisClient) {
+    this.instance = base;
+  }
+}
+
+function configureRedisAsync() {
+  const redis = createNodeRedisClient({
     host: env.REDIS_HOST,
     port: Number(env.REDIS_PORT),
-    password: env.REDIS_PW,
+    password: env.REDIS_PW
   });
-};
 
-export { configurePool, pool };
+  return new Promise<Redis>((res, rej) => {
+    redis.nodeRedis.on('error', rej);
+    redis.nodeRedis.on('ready', () => res(new Redis(redis)));
+  });
+}
+
+export { configureRedisAsync, Redis };

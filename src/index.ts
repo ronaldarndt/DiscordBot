@@ -6,32 +6,28 @@ import { bandidoInterceptorAsync } from './middlewares/bandidoInterceptor';
 import { botInterceptorAsync } from './middlewares/botInterceptor';
 import { handleMessageAsync } from './middlewares/handleMessage';
 import './modules/array';
-import { AsyncLazy } from './modules/cache';
 import { env } from './modules/env';
 import { MiddlewarePipeline } from './modules/middlewarePipeline';
-import { configurePool, pool } from './modules/redis';
+import { configureRedisAsync, Redis } from './modules/redis';
 
-const client = new Discord.Client();
+Promise.all([configureRedisAsync(), loadCommandsAsync()]).then(
+  ([redis, helps]) => {
+    console.log('commands loaded');
 
-const pipeline = new MiddlewarePipeline<Message>()
-  .use(botInterceptorAsync)
-  .use(bandidoInterceptorAsync)
-  .use(handleMessageAsync);
+    const client = new Discord.Client();
 
-container.register('redis', {
-  useFactory: () => new AsyncLazy(() => pool.getTedis()),
-});
+    const pipeline = new MiddlewarePipeline<Message>()
+      .use(botInterceptorAsync)
+      .use(bandidoInterceptorAsync)
+      .use(handleMessageAsync);
 
-configurePool();
+    container.register('help', { useValue: helps });
+    container.register(Redis, { useValue: redis });
 
-loadCommandsAsync().then(helps => {
-  container.register('help', { useValue: helps });
+    client.on('message', pipeline.execute);
 
-  console.log('commands loaded');
+    client.once('ready', () => console.log('bot running'));
 
-  client.on('message', pipeline.execute);
-
-  client.once('ready', () => console.log('bot running'));
-
-  client.login(env.DISCORD_TOKEN);
-});
+    client.login(env.DISCORD_TOKEN);
+  }
+);

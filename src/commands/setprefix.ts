@@ -1,20 +1,18 @@
-import { Tedis } from 'tedis';
-import { inject, injectable } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { Command } from '../lib/commands';
-import { AsyncLazy } from '../modules/cache';
-import { pool } from '../modules/redis';
+import { Redis } from '../modules/redis';
 import { Servers } from '../services/servers';
 
 @injectable()
 export default class SetprefixCommand extends Command {
   static command = 'setprefix';
 
-  constructor(@inject('redis') private lazyRedis: AsyncLazy<Tedis>) {
+  constructor(private redis: Redis) {
     super();
   }
 
   async handlerAsync(prefix: string) {
-    const serversService = new Servers(await this.lazyRedis.getAsync());
+    const serversService = new Servers(this.redis);
 
     const { guild } = this.context.message;
 
@@ -29,14 +27,6 @@ export default class SetprefixCommand extends Command {
     await serversService.setPrefixAsync(guild.id, prefix);
 
     await this.replyAsync(`Command prefix for this server set as "${prefix}"`);
-  }
-
-  async disposeAsync() {
-    if (this.lazyRedis.loaded) {
-      const tedis = await this.lazyRedis.getAsync();
-
-      pool.putTedis(tedis);
-    }
   }
 
   static help() {

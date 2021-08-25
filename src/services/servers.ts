@@ -1,7 +1,6 @@
-import { Tedis } from 'tedis';
 import { container } from 'tsyringe';
-import { AsynCache, AsyncLazy } from '../modules/cache';
-import { pool } from '../modules/redis';
+import { AsynCache } from '../modules/cache';
+import { Redis } from '../modules/redis';
 
 interface Server {
   id: string;
@@ -11,13 +10,13 @@ interface Server {
 const fiveMin = 1000 * 60 * 5;
 
 class Servers {
-  constructor(private redis: Tedis) {}
+  constructor(private redis: Redis) {}
 
   getServersAsync = async () => {
-    const keys = await this.redis.smembers('servers');
+    const keys = await this.redis.instance.smembers('servers');
 
     const mapping = keys.map(
-      async key => (await this.redis.hgetall(key)) as unknown
+      async key => (await this.redis.instance.hgetall(key)) as unknown
     );
 
     const servers = await Promise.all(mapping);
@@ -26,12 +25,13 @@ class Servers {
   };
 
   setPrefixAsync = async (serverId: string, prefix: string) => {
-    await this.redis.sadd('servers', serverId);
+    await this.redis.instance.sadd('servers', serverId);
 
-    await this.redis.hmset(serverId, {
-      id: serverId,
-      prefix,
-    });
+    await this.redis.instance.hmset(
+      serverId,
+      ['id', serverId],
+      ['prefix', prefix]
+    );
 
     Servers.cache.invalidate();
   };
@@ -40,23 +40,11 @@ class Servers {
 
   static async getCacheAsync() {
     if (!this.cache) {
-      let cacheRedis: Tedis;
+      const redis = container.resolve(Redis);
 
-      const factoryAsync = async () => {
-        if (cacheRedis) {
-          pool.putTedis(cacheRedis);
-        }
+      const instance = new Servers(redis);
 
-        cacheRedis = await container
-          .resolve<AsyncLazy<Tedis>>('redis')
-          .getAsync();
-
-        const instance = new Servers(cacheRedis);
-
-        return await instance.getServersAsync();
-      };
-
-      this.cache = new AsynCache(fiveMin, factoryAsync);
+      this.cache = new AsynCache(fiveMin, instance.getServersAsync);
     }
 
     return this.cache;

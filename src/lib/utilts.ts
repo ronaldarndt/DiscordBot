@@ -1,7 +1,7 @@
 import { CommandHandler } from '../modules/types';
 import {
   getDecoratorInstances,
-  optionalParameterMetadataKey,
+  optionalParameterMetadataKey
 } from './decoratorMetadata';
 
 type ParseReturn = [boolean, string[]];

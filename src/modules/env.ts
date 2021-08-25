@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export interface Env extends NodeJS.ProcessEnv {
+interface Env extends NodeJS.ProcessEnv {
   DISCORD_TOKEN: string;
   OPENWEATHERMAP_KEY: string;
   REDIS_HOST: string;
@@ -11,4 +11,6 @@ export interface Env extends NodeJS.ProcessEnv {
   CODIGO_SECULLUM_INTERNO: string;
 }
 
-export const env = process.env as Env;
+const env = process.env as Env;
+
+export { Env, env };

@@ -4,7 +4,7 @@ import { Command } from '../lib/commands';
 import { env } from '../modules/env';
 
 const headers = {
-  'X-CodigoSecullumInterno': env.CODIGO_SECULLUM_INTERNO,
+  'X-CodigoSecullumInterno': env.CODIGO_SECULLUM_INTERNO
 };
 
 @injectable()

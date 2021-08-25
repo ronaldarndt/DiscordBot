@@ -27,24 +27,4 @@ class AsynCache<T> {
   };
 }
 
-class AsyncLazy<T> {
-  private _factoryAsync: AsyncFactory<T>;
-  private _value?: T;
-
-  loaded = false;
-
-  constructor(factoryAsync: AsyncFactory<T>) {
-    this._factoryAsync = factoryAsync;
-  }
-
-  getAsync = async () => {
-    if (!this._value) {
-      this._value = await this._factoryAsync();
-      this.loaded = true;
-    }
-
-    return this._value;
-  };
-}
-
-export { AsynCache, AsyncLazy };
+export { AsynCache };
