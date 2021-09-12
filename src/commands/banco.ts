@@ -9,8 +9,6 @@ const headers = {
 
 @injectable()
 export default class BancoCommand extends Command {
-  static command = 'banco';
-
   async handlerAsync(bancoId: string) {
     const request = await fetch(
       'https://autenticador.secullum.com.br/InformacoesBancos/PorBancoId/' +

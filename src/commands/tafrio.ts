@@ -7,8 +7,6 @@ const key = process.env.OPENWEATHERMAP_KEY;
 
 @injectable()
 export default class TafrioCommand extends Command {
-  static command = 'tafrio';
-
   async handlerAsync(@optional cidade: string = 'porto alegre') {
     const res = await fetch(
       `https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&appid=${key}`

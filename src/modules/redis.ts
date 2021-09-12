@@ -2,11 +2,7 @@ import { createNodeRedisClient, WrappedNodeRedisClient } from 'handy-redis';
 import { env } from './env';
 
 class Redis {
-  instance: WrappedNodeRedisClient;
-
-  constructor(base: WrappedNodeRedisClient) {
-    this.instance = base;
-  }
+  constructor(public instance: WrappedNodeRedisClient) {}
 }
 
 function configureRedisAsync() {

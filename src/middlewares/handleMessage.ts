@@ -1,15 +1,23 @@
 import { Message } from 'discord.js';
+import { container } from 'tsyringe';
 import { handleCommand } from '../lib/commands';
-import { Servers } from '../services/servers';
+import { ServersService } from '../services/servers';
 
 async function handleMessageAsync(message: Message) {
   const { guild } = message;
 
-  const servers = await Servers.getCacheAsync().then(cache => cache.getAsync());
+  let prefix = '!';
 
-  const server = guild ? servers.find(x => x.id === guild.id) : null;
+  if (guild) {
+    const service = container.resolve(ServersService);
+    const servers = await service.cache.getAsync();
 
-  const prefix = server?.prefix ?? '!';
+    const server = servers.find(x => x.id === guild.id);
+
+    if (server?.prefix) {
+      prefix = server.prefix;
+    }
+  }
 
   if (message.content.startsWith(prefix)) {
     await handleCommand(

@@ -63,7 +63,10 @@ async function loadCommandsAsync() {
       x => x.default as CustomCommand
     );
 
-    const name = commandClass.command ?? commandClass.name;
+    const ext = path.extname(file);
+    const filename = path.basename(file, ext);
+
+    const name = commandClass.command || filename || commandClass.name;
 
     helps.push([name, commandClass.help()]);
     commands[name] = commandClass;

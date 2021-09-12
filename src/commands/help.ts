@@ -4,8 +4,6 @@ import { Command, Help } from '../lib/commands';
 
 @injectable()
 class HelpCommand extends Command {
-  static command = 'help';
-
   constructor(@inject('help') private helpList: Help[]) {
     super();
   }

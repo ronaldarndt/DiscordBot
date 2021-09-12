@@ -3,8 +3,6 @@ import { Command } from '../lib/commands';
 
 @injectable()
 export default class PingCommand extends Command {
-  static command = 'ping';
-
   async handlerAsync() {
     const delay = new Date().getTime() - this.context.message.createdTimestamp;
 

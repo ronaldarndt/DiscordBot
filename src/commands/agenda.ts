@@ -16,7 +16,6 @@ class AgendaAddCommand extends Command {
 
 @injectable()
 export default class AgendaCommand extends Command {
-  static command = 'agenda';
   static subCommands = {
     add: AgendaAddCommand
   };

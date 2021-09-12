@@ -1,4 +1,4 @@
-import { container } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { AsynCache } from '../modules/cache';
 import { Redis } from '../modules/redis';
 
@@ -9,7 +9,18 @@ interface Server {
 
 const fiveMin = 1000 * 60 * 5;
 
-class Servers {
+@injectable()
+class ServersService {
+  private static _cache: AsynCache<Server[]>;
+
+  public get cache() {
+    if (!ServersService._cache) {
+      ServersService._cache = new AsynCache(fiveMin, this.getServersAsync);
+    }
+
+    return ServersService._cache;
+  }
+
   constructor(private redis: Redis) {}
 
   getServersAsync = async () => {
@@ -33,22 +44,8 @@ class Servers {
       ['prefix', prefix]
     );
 
-    Servers.cache.invalidate();
+    ServersService._cache?.invalidate();
   };
-
-  private static cache: AsynCache<Server[]>;
-
-  static async getCacheAsync() {
-    if (!this.cache) {
-      const redis = container.resolve(Redis);
-
-      const instance = new Servers(redis);
-
-      this.cache = new AsynCache(fiveMin, instance.getServersAsync);
-    }
-
-    return this.cache;
-  }
 }
 
-export { Server, Servers };
+export { Server, ServersService };

@@ -1,19 +1,14 @@
 import { injectable } from 'tsyringe';
 import { Command } from '../lib/commands';
-import { Redis } from '../modules/redis';
-import { Servers } from '../services/servers';
+import { ServersService } from '../services/servers';
 
 @injectable()
 export default class SetprefixCommand extends Command {
-  static command = 'setprefix';
-
-  constructor(private redis: Redis) {
+  constructor(private servers: ServersService) {
     super();
   }
 
   async handlerAsync(prefix: string) {
-    const serversService = new Servers(this.redis);
-
     const { guild } = this.context.message;
 
     if (!guild) {
@@ -24,7 +19,7 @@ export default class SetprefixCommand extends Command {
       return;
     }
 
-    await serversService.setPrefixAsync(guild.id, prefix);
+    await this.servers.setPrefixAsync(guild.id, prefix);
 
     await this.replyAsync(`Command prefix for this server set as "${prefix}"`);
   }
