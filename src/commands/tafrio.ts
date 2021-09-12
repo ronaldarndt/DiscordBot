@@ -25,6 +25,6 @@ export default class TafrioCommand extends Command {
   }
 
   static help() {
-    return `Responde se ta frio ou nao.\nExemplo: !tafrio\nBot: ba cpx ta sim, 8 grau`;
+    return `Responde se ta frio ou nao.\nExemplo: !tafrio\nRetorno: ba cpx ta sim, 8 grau`;
   }
 }

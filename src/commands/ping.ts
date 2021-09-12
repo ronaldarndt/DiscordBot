@@ -10,7 +10,6 @@ export default class PingCommand extends Command {
   }
 
   static help() {
-    return `Returns the amount of time it took for the server to receive your message.
-Example.: !pong 300ms`;
+    return 'Returns the amount of time it took for the server to receive your message.';
   }
 }

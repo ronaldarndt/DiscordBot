@@ -26,6 +26,6 @@ export default class SetprefixCommand extends Command {
 
   static help() {
     return `Sets the prefix used for bot commands on the current server.
-Example.: !setprefix @`;
+Example: !setprefix @`;
   }
 }

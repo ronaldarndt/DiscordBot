@@ -14,10 +14,10 @@ class HelpCommand extends Command {
       : this.helpList;
 
     const helpMessage = list
-      .map(([name, message]) => `**${name}**:\n${message}`)
+      .map(([name, message]) => `<${name}>: ${message}`)
       .join('\n\n');
 
-    await this.replyAsync(helpMessage);
+    await this.replyAsync('```md\n' + helpMessage + '\n```');
   }
 
   static help() {

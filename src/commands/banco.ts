@@ -26,6 +26,6 @@ export default class BancoCommand extends Command {
   static help() {
     return `Retorna informações sobre banco do conta secullum.
 Exemplo: !banco 694
-Retorno: {  "nome": "Teste Secullum", "identificador": "4113030e94fa4bddb554bf7d0698cad7"}`;
+Retorno: {"nome": "Teste Secullum", "identificador": "4113030e94fa4bddb554bf7d0698cad7"}`;
   }
 }
