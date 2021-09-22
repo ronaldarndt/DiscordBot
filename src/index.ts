@@ -1,33 +1,45 @@
-import Discord, { Message } from 'discord.js';
+import { Client, Collection, Intents, Interaction, Message } from 'discord.js';
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { loadCommandsAsync } from './lib/commands';
+import { loadCommandsAsync, registerSlashCommandsAsync } from './lib/commands';
 import { bandidoInterceptorAsync } from './middlewares/bandidoInterceptor';
 import { botInterceptorAsync } from './middlewares/botInterceptor';
-import { handleMessageAsync } from './middlewares/handleMessage';
-import './modules/array';
+import { HandleInteraction } from './middlewares/handleInteraction';
 import { env } from './modules/env';
 import { MiddlewarePipeline } from './modules/middlewarePipeline';
 import { configureRedisAsync, Redis } from './modules/redis';
 
-Promise.all([configureRedisAsync(), loadCommandsAsync()]).then(
-  ([redis, helps]) => {
-    console.log('commands loaded');
+const client = new Client({
+  intents: [
+    Intents.FLAGS.GUILDS,
+    Intents.FLAGS.DIRECT_MESSAGES,
+    Intents.FLAGS.GUILD_MESSAGES
+  ]
+});
 
-    const client = new Discord.Client();
+(async () => {
+  const [commands, helps] = await loadCommandsAsync();
+  const redis = await configureRedisAsync();
 
-    const pipeline = new MiddlewarePipeline<Message>()
-      .use(botInterceptorAsync)
-      .use(bandidoInterceptorAsync)
-      .use(handleMessageAsync);
+  await registerSlashCommandsAsync(commands, env.DISCORD_TOKEN);
 
-    container.register('help', { useValue: helps });
-    container.register(Redis, { useValue: redis });
+  const messagePipeline = new MiddlewarePipeline<Message>()
+    .use(botInterceptorAsync)
+    .use(bandidoInterceptorAsync);
 
-    client.on('message', pipeline.execute);
+  const commandPipeline = new MiddlewarePipeline<Interaction>().use(
+    HandleInteraction
+  );
 
-    client.once('ready', () => console.log('bot running'));
+  container.register('help', { useValue: helps });
+  container.register(Redis, { useValue: redis });
+  container.register('commands', {
+    useValue: new Collection(Object.entries(commands))
+  });
 
-    client.login(env.DISCORD_TOKEN);
-  }
-);
+  client
+    .on('messageCreate', messagePipeline.execute)
+    .on('interactionCreate', commandPipeline.execute)
+    .once('ready', () => console.log('bot running'))
+    .login(env.DISCORD_TOKEN);
+})();

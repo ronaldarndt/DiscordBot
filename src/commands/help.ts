@@ -1,14 +1,19 @@
+import { codeBlock } from '@discordjs/builders';
 import { inject, injectable } from 'tsyringe';
-import { optional } from '../lib/commandDecorators';
+import { param } from '../lib/commandDecorators';
 import { Command, Help } from '../lib/commands';
 
 @injectable()
 class HelpCommand extends Command {
+  static help = 'Returns commands information.';
+
   constructor(@inject('help') private helpList: Help[]) {
     super();
   }
 
-  async handlerAsync(@optional command: string = '') {
+  async handlerAsync(
+    @param('command', 'which command to search', false) command?: string
+  ) {
     const list = command
       ? this.helpList.filter(([name]) => name === command)
       : this.helpList;
@@ -17,11 +22,9 @@ class HelpCommand extends Command {
       .map(([name, message]) => `<${name}>: ${message}`)
       .join('\n\n');
 
-    await this.replyAsync('```md\n' + helpMessage + '\n```');
-  }
+    const response = codeBlock('md', helpMessage);
 
-  static help() {
-    return 'Returns this message.';
+    await this.replyAsync(response);
   }
 }
 

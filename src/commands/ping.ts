@@ -1,15 +1,20 @@
+import { Message } from 'discord.js';
 import { injectable } from 'tsyringe';
 import { Command } from '../lib/commands';
 
 @injectable()
 export default class PingCommand extends Command {
+  static help =
+    'Returns the amount of time it took for the server to receive your message.';
+
   async handlerAsync() {
-    const delay = new Date().getTime() - this.context.message.createdTimestamp;
+    const sent = await this.context.interaction
+      .reply({ content: 'Pinging...', fetchReply: true })
+      .then(x => x as Message);
 
-    await this.replyAsync(`pong! ${delay}ms`);
-  }
+    const latency =
+      this.context.interaction.createdTimestamp - sent.createdTimestamp;
 
-  static help() {
-    return 'Returns the amount of time it took for the server to receive your message.';
+    await this.context.interaction.editReply(`pong! ${latency}ms`);
   }
 }

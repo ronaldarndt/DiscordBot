@@ -1,5 +1,7 @@
+import { codeBlock } from '@discordjs/builders';
 import fetch from 'node-fetch';
 import { injectable } from 'tsyringe';
+import { param } from '../lib/commandDecorators';
 import { Command } from '../lib/commands';
 import { env } from '../modules/env';
 
@@ -9,23 +11,21 @@ const headers = {
 
 @injectable()
 export default class BancoCommand extends Command {
-  async handlerAsync(bancoId: string) {
+  static help = 'Retorna informações sobre um banco do conta secullum.';
+
+  async handlerAsync(
+    @param('banco_id', 'Id do banco à buscar') bancoId: string
+  ) {
+    await this.context.interaction.deferReply();
+
     const request = await fetch(
       'https://autenticador.secullum.com.br/InformacoesBancos/PorBancoId/' +
         bancoId,
       { headers }
-    );
+    ).then(x => x.json());
 
-    const response = await request.json();
+    const response = codeBlock('json', JSON.stringify(request, null, 2));
 
-    const message = '```json\n' + JSON.stringify(response, null, 2) + '\n```';
-
-    this.replyAsync(message);
-  }
-
-  static help() {
-    return `Retorna informações sobre banco do conta secullum.
-Exemplo: !banco 694
-Retorno: {"nome": "Teste Secullum", "identificador": "4113030e94fa4bddb554bf7d0698cad7"}`;
+    await this.context.interaction.editReply(response);
   }
 }

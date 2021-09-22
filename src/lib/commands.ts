@@ -1,22 +1,38 @@
-import Discord, { Message } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  SlashCommandStringOption,
+  SlashCommandSubcommandBuilder,
+  SlashCommandSubcommandsOnlyBuilder
+} from '@discordjs/builders';
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
+import { Collection, CommandInteraction } from 'discord.js';
 import { promises } from 'fs';
 import path from 'path';
-import { container } from 'tsyringe';
-import { tryParseCommand } from './utilts';
+import { env } from '../modules/env';
+import { getHandlerParameters, Parameter } from './commandDecorators';
 
-type CustomCommand = typeof Command & (new () => Command);
-type CommandList = { [name: string]: CustomCommand };
+type CommandPrototype = typeof Command & (new () => Command);
+type CommandList = Record<string, CommandPrototype>;
 type Help = [command: string, text: string];
 
-interface CommandContext {
-  message: Message;
-}
+type GetParameterOptionBuilder = (
+  builder: (builder: SlashCommandStringOption) => SlashCommandStringOption
+) => SlashCommandBuilder;
 
-const commands: CommandList = {};
+type SlashBuilder =
+  | SlashCommandBuilder
+  | SlashCommandSubcommandBuilder
+  | SlashCommandSubcommandsOnlyBuilder;
+
+interface CommandContext {
+  interaction: CommandInteraction;
+}
 
 abstract class Command {
   static command: string;
-  static subCommands: CommandList = {};
+  static help: string;
+  static subCommands = new Collection<string, CommandPrototype>();
 
   //@ts-ignore
   protected context: CommandContext;
@@ -29,18 +45,12 @@ abstract class Command {
   }
 
   protected async replyAsync(message: string) {
-    await this.context.message.channel.send(message);
-  }
-
-  static hasSub(this: CustomCommand, name: string) {
-    return name in this.subCommands;
+    await this.context.interaction.reply(message);
   }
 
   static hasHandler<T extends Command>(this: new () => T) {
     return !!new this().handlerAsync;
   }
-
-  static help: () => string;
 }
 
 async function loadCommandsAsync() {
@@ -49,18 +59,17 @@ async function loadCommandsAsync() {
   const files = await promises
     .readdir(folderPath)
     .then(files =>
-      files.filter(
-        file =>
-          (file.endsWith('.ts') || file.endsWith('.js')) &&
-          !file.includes('index.')
-      )
+      files
+        .filter(file => file.endsWith('.ts') || file.endsWith('.js'))
+        .map(file => path.resolve(folderPath, file))
     );
 
   const helps: Array<Help> = [];
+  const commands: CommandList = {};
 
   for (let file of files) {
     const commandClass = await import(path.resolve(folderPath, file)).then(
-      x => x.default as CustomCommand
+      x => x.default as CommandPrototype
     );
 
     const ext = path.extname(file);
@@ -68,68 +77,90 @@ async function loadCommandsAsync() {
 
     const name = commandClass.command || filename || commandClass.name;
 
-    helps.push([name, commandClass.help()]);
+    helps.push([name, commandClass.help]);
     commands[name] = commandClass;
   }
 
-  return helps;
+  return [commands, helps] as [CommandList, Array<Help>];
 }
 
-async function handleCommand(
-  message: Discord.Message,
-  text: string,
-  prefix: string,
-  list?: CommandList
+async function registerSlashCommandsAsync(
+  commands: CommandList,
+  token: string
 ) {
-  list ??= commands;
+  const slashCommands = Object.entries(commands).map(([key, value]) => {
+    let builder = buildCommand(key, value);
 
-  const parts = text.split(/ +/);
-  const userCommand = parts[0];
+    if (builder instanceof SlashCommandBuilder) {
+      for (const [subName, subCommand] of value.subCommands) {
+        builder = builder.addSubcommand(
+          sub => buildCommand(subName, subCommand, sub) as any
+        );
+      }
+    }
 
-  const command = list[userCommand];
-  const hasSub = command?.hasSub(parts[1]);
+    return builder.toJSON();
+  });
 
-  if (!command || (!hasSub && !command.hasHandler())) {
-    await message.channel.send(
-      `Command not found. Type ${prefix}help for more info`
-    );
+  const rest = new REST({ version: '9' }).setToken(token);
 
-    return;
-  }
+  const route = env.DEV
+    ? Routes.applicationGuildCommands(env.BOT_ID, env.GUILD_ID)
+    : Routes.applicationCommands(env.BOT_ID);
 
-  if (hasSub) {
-    await handleCommand(
-      message,
-      parts.skip(1).join(' '),
-      prefix,
-      command.subCommands
-    );
-
-    return;
-  }
-
-  const commandHandler = container.resolve(command);
-  commandHandler.setContext({ message });
-
-  const name = command.command ?? command.name;
-
-  const { handlerAsync } = commandHandler;
-
-  const [parseSuccess, args] = tryParseCommand(parts, handlerAsync!);
-
-  if (!parseSuccess) {
-    await message.channel.send(
-      'Invalid parameters.' +
-        ` Command ${name} expects ${
-          handlerAsync!.length
-        } parameters but received ${args.length}.` +
-        ` Type !help ${name} for more info.`
-    );
-
-    return;
-  }
-
-  await commandHandler.handlerAsync!(...args);
+  await rest.put(route, {
+    body: slashCommands
+  });
 }
 
-export { Command, loadCommandsAsync, handleCommand, Help, commands };
+function buildCommand(
+  key: string,
+  command: CommandPrototype,
+  baseBuilder:
+    | SlashCommandBuilder
+    | SlashCommandSubcommandBuilder = new SlashCommandBuilder()
+): SlashBuilder {
+  let builder = baseBuilder.setName(key).setDescription(command.help);
+
+  const isCommandBuilder =
+    builder instanceof SlashCommandBuilder ||
+    builder instanceof SlashCommandSubcommandBuilder;
+
+  if (!isCommandBuilder) {
+    return builder;
+  }
+
+  for (const param of getHandlerParameters(command)) {
+    const optionBuilder = getParameterOptionBuilder(builder, param);
+
+    builder = optionBuilder.call(builder, b =>
+      b
+        .setName(param.name)
+        .setDescription(param.description)
+        .setRequired(param.required)
+    );
+  }
+
+  return builder;
+}
+
+function getParameterOptionBuilder(
+  builder: SlashCommandBuilder | SlashCommandSubcommandBuilder,
+  param: Parameter
+): GetParameterOptionBuilder {
+  if (param.type === 'Boolean') {
+    return builder.addBooleanOption as any;
+  } else if (param.type === 'Number') {
+    return builder.addNumberOption as any;
+  }
+
+  return builder.addStringOption as any;
+}
+
+export {
+  Command,
+  CommandPrototype,
+  loadCommandsAsync,
+  registerSlashCommandsAsync,
+  Help
+};
