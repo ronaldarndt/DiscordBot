@@ -1,8 +1,10 @@
+import { singleton } from 'tsyringe';
 import { b } from '../modules/number';
 
 const hexFactor = b(16);
 
-class ConversionsClass {
+@singleton()
+class ConversionsService {
   public hexToDecimal(hex: string) {
     hex = hex.toLowerCase();
 
@@ -29,4 +31,4 @@ class ConversionsClass {
   }
 }
 
-export { ConversionsClass };
+export { ConversionsService };

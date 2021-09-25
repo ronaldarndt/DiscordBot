@@ -15,10 +15,8 @@ type Middleware<T> = FunctionMiddleware<T> | Constructor<ClassMiddleware<T>>;
 
 class MiddlewarePipeline<T> {
   use = (fn: Middleware<T>) => {
-    this.execute = (
-      stack => (c: T, next?: FunctionMiddleware<T>) =>
-        stack(c, async () => await this.invokeAsync(fn, c, next))
-    )(this.execute);
+    this.execute = (stack => (c: T, next?: FunctionMiddleware<T>) =>
+      stack(c, async () => await this.invokeAsync(fn, c, next)))(this.execute);
 
     return this;
   };

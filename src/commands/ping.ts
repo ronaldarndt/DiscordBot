@@ -8,13 +8,12 @@ export default class PingCommand extends Command {
     'Returns the amount of time it took for the server to receive your message.';
 
   async handlerAsync() {
-    const sent = await this.context.interaction
+    const sent = await this.interaction
       .reply({ content: 'Pinging...', fetchReply: true })
       .then(x => x as Message);
 
-    const latency =
-      this.context.interaction.createdTimestamp - sent.createdTimestamp;
+    const latency = sent.createdTimestamp - this.interaction.createdTimestamp;
 
-    await this.context.interaction.editReply(`pong! ${latency}ms`);
+    await this.interaction.editReply(`pong! ${latency}ms`);
   }
 }

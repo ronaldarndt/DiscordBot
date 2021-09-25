@@ -1,28 +1,25 @@
-import fetch from 'node-fetch';
 import { injectable } from 'tsyringe';
 import { param } from '../lib/commandDecorators';
 import { Command } from '../lib/commands';
-import { OpenWeatherMapQueryResult } from '../modules/types';
-
-const key = process.env.OPENWEATHERMAP_KEY;
+import { WeatherService } from '../services/weather';
 
 @injectable()
 export default class TafrioCommand extends Command {
   static help = 'Responde se ta frio ou nao.';
 
+  constructor(private weatherService: WeatherService) {
+    super();
+  }
+
   async handlerAsync(
     @param('cidade', 'Nome da cidade', false) cidade: string = 'porto alegre'
   ) {
-    await this.context.interaction.deferReply();
+    await this.interaction.deferReply();
 
-    const dados = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&appid=${key}`
-    ).then(
-      async x => (await x.json()) as OpenWeatherMapQueryResult | undefined
-    );
+    const dados = await this.weatherService.getAsync(cidade);
 
     if (!dados?.main) {
-      return this.replyAsync('Location not found.');
+      return this.interaction.editReply('Local não encontrado.');
     }
 
     const { temp } = dados.main;
@@ -33,6 +30,6 @@ export default class TafrioCommand extends Command {
         ? `ba cpx ta loco ${tempFormatada} grau`
         : `${tempFormatada} ta mec B)`;
 
-    await this.context.interaction.editReply(msg);
+    await this.interaction.editReply(msg);
   }
 }

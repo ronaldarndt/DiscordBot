@@ -35,13 +35,17 @@ class HandleInteraction extends ClassMiddleware<Interaction> {
     }
 
     const commandHandler = container.resolve<Command>(command);
-    commandHandler.setContext({ interaction });
+    commandHandler.setInteraction(interaction);
 
     const parameters = getHandlerParameters(command).map(
       x => interaction.options.get(x.name)?.value
     );
 
-    await commandHandler.handlerAsync!(...parameters);
+    try {
+      await commandHandler.handlerAsync!(...parameters);
+    } catch (error) {
+      interaction.reply('Error ' + error);
+    }
 
     return next();
   };

@@ -6,7 +6,11 @@ import {
 } from '@discordjs/builders';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
-import { Collection, CommandInteraction } from 'discord.js';
+import {
+  Collection,
+  CommandInteraction,
+  InteractionReplyOptions
+} from 'discord.js';
 import { promises } from 'fs';
 import path from 'path';
 import { env } from '../modules/env';
@@ -25,27 +29,25 @@ type SlashBuilder =
   | SlashCommandSubcommandBuilder
   | SlashCommandSubcommandsOnlyBuilder;
 
-interface CommandContext {
-  interaction: CommandInteraction;
-}
-
 abstract class Command {
   static command: string;
   static help: string;
   static subCommands = new Collection<string, CommandPrototype>();
 
   //@ts-ignore
-  protected context: CommandContext;
+  protected interaction: CommandInteraction;
 
-  handlerAsync?(...args: unknown[]): Promise<void>;
-  disposeAsync?(): Promise<void>;
+  handlerAsync?(...args: unknown[]): Promise<unknown>;
 
-  setContext(c: CommandContext) {
-    this.context = c;
+  setInteraction(interaction: CommandInteraction) {
+    this.interaction = interaction;
   }
 
-  protected async replyAsync(message: string) {
-    await this.context.interaction.reply(message);
+  protected async replyAsync(
+    message: string,
+    options: InteractionReplyOptions = {}
+  ) {
+    await this.interaction.reply({ content: message, ...options });
   }
 
   static hasHandler<T extends Command>(this: new () => T) {
@@ -108,6 +110,7 @@ async function registerSlashCommandsAsync(
     ? Routes.applicationGuildCommands(env.BOT_ID, env.GUILD_ID)
     : Routes.applicationCommands(env.BOT_ID);
 
+  //@ts-ignore
   await rest.put(route, {
     body: slashCommands
   });
