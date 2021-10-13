@@ -1,8 +1,9 @@
 import { createAudioPlayer } from '@discordjs/voice';
 import { Collection } from 'discord.js';
 import { singleton } from 'tsyringe';
-import ytsr, { Video } from 'ytsr';
-import { GuildPlayer } from '../modules/types';
+import { getBasicInfo, validateURL } from 'ytdl-core-discord';
+import ytsr from 'ytsr';
+import { GuildPlayer, Video } from '../modules/types';
 
 @singleton()
 class SongQueueService {
@@ -33,7 +34,16 @@ class SongQueueService {
     guild.player.stop(true);
   }
 
-  async searchAsync(songName: string) {
+  async searchAsync(songName: string): Promise<Video> {
+    if (validateURL(songName)) {
+      const info = await getBasicInfo(songName);
+
+      return {
+        url: info.videoDetails.video_url,
+        title: info.videoDetails.title
+      };
+    }
+
     const info = await ytsr(songName, { limit: 5, safeSearch: false });
 
     return info.items.find(x => x.type === 'video') as Video;
@@ -56,4 +66,4 @@ class SongQueueService {
   }
 }
 
-export { SongQueueService };
+export { SongQueueService, Video };

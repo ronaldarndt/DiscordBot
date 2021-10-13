@@ -1,6 +1,5 @@
 import { AudioPlayer } from '@discordjs/voice';
 import { Message } from 'discord.js';
-import { Video } from 'ytsr';
 
 type CommandHandler = (message: Message, ...args: unknown[]) => void;
 
@@ -8,6 +7,11 @@ type Constructor<T> = new (...args: any[]) => T;
 type ConstructorlessClass = { [key: string]: any };
 type ConstructorClass = Constructor<unknown> & ConstructorlessClass;
 type Class = ConstructorClass | ConstructorlessClass;
+
+interface Video {
+  url: string;
+  title: string;
+}
 
 interface GuildPlayer {
   player: AudioPlayer;
@@ -69,6 +73,7 @@ export type {
   CommandHandler,
   Constructor,
   Class,
+  Video,
   GuildPlayer,
   OpenWeatherMapQueryResult,
   BancoSecullum

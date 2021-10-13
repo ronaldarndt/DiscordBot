@@ -11,10 +11,9 @@ import { GuildMember } from 'discord.js';
 import { APIInteractionGuildMember } from 'discord.js/node_modules/discord-api-types/payloads/v9/_interactions/base';
 import { injectable } from 'tsyringe';
 import downloadAudioAsync from 'ytdl-core-discord';
-import { Video } from 'ytsr';
 import { param } from '../lib/commandDecorators';
 import { Command } from '../lib/commands';
-import { SongQueueService } from '../services/songQueue';
+import { SongQueueService, Video } from '../services/songQueue';
 
 type Member = GuildMember | APIInteractionGuildMember | null;
 
@@ -29,6 +28,7 @@ class SongCommandBase extends Command {
       });
     }
 
+    //@ts-ignore
     return isInVoiceChannel ? member.voice.channel : undefined;
   }
 }
